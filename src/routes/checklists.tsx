@@ -30,7 +30,7 @@ type Item = { id: string; name: string; sub?: string };
 function Page() {
   const [runs, setRuns] = useSelectionState<Set<string>>("checklists:runs", new Set(), "promotion sites selection");
   const [pg, setPg] = useSelectionState<Set<string>>("checklists:prices", new Set(["PG1"]), "price groups selection");
-  const siteItems = useMemo(() => sites.map((s) => ({ id: s.id, name: s.name, sub: s.area })), []);
+  const siteItems = useMemo(() => sites.map((s) => ({ id: s.id, name: s.name, sub: `${s.region} › ${s.area}` })), []);
   return (
     <>
       <PageTitle crumb="Centralised Management › Promotions" title="Pint & Pizza (PR73)" intro="Pattern C: checklist dropdowns. Search is pinned at the top; closing the list shows everything ticked, including ticks made in earlier searches." />

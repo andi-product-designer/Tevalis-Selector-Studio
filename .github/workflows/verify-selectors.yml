@@ -22,9 +22,10 @@ jobs:
       - run: bunx tsc --noEmit
       - run: bun run build
       - name: Install browser verification tools
+        timeout-minutes: 5
         run: |
-          npm install --prefix /tmp/selector-browser --no-package-lock playwright@1.56.1
-          /tmp/selector-browser/node_modules/.bin/playwright install --with-deps chromium
+          npm install --prefix /tmp/selector-browser --no-package-lock --fetch-timeout=30000 playwright@1.56.1
+          google-chrome --version
       - name: Verify rendered selectors and measure 5,000-row filtering
         run: |
           python3 -m http.server 4173 --directory dist/client >/tmp/selector-server.log 2>&1 &
@@ -32,6 +33,7 @@ jobs:
           trap 'kill "$server_pid"' EXIT
           node scripts/verify-selectors.mjs
         env:
+          PLAYWRIGHT_CHANNEL: chrome
           PLAYWRIGHT_MODULE: /tmp/selector-browser/node_modules/playwright/index.mjs
       - name: Upload screenshots and timing evidence
         if: always()

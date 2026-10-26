@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || "playwright");
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}) });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 const base = process.env.SELECTOR_TEST_URL || "http://127.0.0.1:4173";
 const errors = [];
@@ -46,8 +46,8 @@ try {
   await page.getByRole("button", { name: "Select Sites", exact: true }).click();
   let search = page.getByRole("searchbox", { name: "Search sites by name or ID" });
   await page.getByText("5000 of 5000", { exact: true }).waitFor();
-  for (const query of ["S6000", "S5999", "S5998", "S5997", "S5996"]) {
-    metrics.push({ selector: "report tree", query, ms: await measure(search, query, "1 of 5000") });
+  for (const { query, count } of [{ query: "Yorkshire", count: 850 }, ...["S6000", "S5999", "S5998", "S5997", "S5996"].map((query) => ({ query, count: 1 }))]) {
+    metrics.push({ selector: "report tree", query, ms: await measure(search, query, count + " of 5000") });
   }
   await search.press("Enter");
   assert.equal(await page.getByRole("button", { name: "Done · 1 sites selected" }).count(), 1);
@@ -73,8 +73,8 @@ try {
   await combo.click();
   await page.getByText("5000 of 5000 sites", { exact: true }).waitFor();
   assert((await page.getByRole("option").count()) < 30);
-  for (const query of ["S6000", "S5999", "S5998", "S5997", "S5996"]) {
-    metrics.push({ selector: "destination combobox", query, ms: await measure(combo, query, "1 of 5000 sites") });
+  for (const { query, count } of [{ query: "Yorkshire", count: 850 }, ...["S6000", "S5999", "S5998", "S5997", "S5996"].map((query) => ({ query, count: 1 }))]) {
+    metrics.push({ selector: "destination combobox", query, ms: await measure(combo, query, count + " of 5000 sites") });
   }
   await bounded(page.locator('[role="listbox"]').locator(".."));
   await page.screenshot({ path: "artifacts/selectors/menu-desktop.png" });

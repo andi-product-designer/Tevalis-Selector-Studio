@@ -13,7 +13,6 @@ dist-ssr
 .output
 .vinxi
 .tanstack/**
-.nitro
 *.local
 
 # Local configuration and credentials
@@ -21,9 +20,6 @@ dist-ssr
 .env.*
 !.env.example
 
-# Wrangler / Cloudflare
-.wrangler/
-.dev.vars
 
 # Editor directories and files
 .vscode/*

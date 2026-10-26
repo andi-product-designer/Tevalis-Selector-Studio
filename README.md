@@ -32,8 +32,8 @@ bun run build:pages
 link or refreshing a page works on GitHub Pages. The router and asset paths use
 the configured Vite base path.
 
-The normal `bun run build` and `vite.config.ts` retain the original Lovable
-deployment configuration.
+`bun run build` creates the same static prototype for a root URL.
+`bun run build:pages` configures the team staging subpath.
 
 ## Staging deployment
 
@@ -45,11 +45,15 @@ published; server output is excluded.
 The workflow derives the site base path from GitHub Pages. For a local static
 build, it defaults to `/Tevalis-Selector-Studio/`; set `PAGES_BASE_PATH` to override.
 
-## Lovable
+## UX scope
 
-This project was created with [Lovable](https://lovable.dev). Keep the connected
-branch in a working state and preserve published commit history: do not force
-push or rewrite commits already synced with Lovable. See `AGENTS.md` for selector
-architecture rules.
+- Site trees for reporting and product trees for discounts.
+- Single-site selection for simulated menu pushes.
+- Searchable navigation rails and checklist dropdowns.
+- Available / In Use transfer lists with stable ordering.
+- Company product groups with independent searches across panes and tabs.
+- Session-wide selection history and undo.
 
-Local `.env` files are ignored and must not be committed.
+See `docs/ux-patterns.md` for the design brief and `AGENTS.md` for interaction
+rules. All examples use illustrative data and run entirely in the browser.
+No authentication, database, analytics, or external service configuration is required.

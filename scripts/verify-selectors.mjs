@@ -120,6 +120,10 @@ try {
   await writeFile("artifacts/selectors/performance.md", summary);
   await writeFile("artifacts/selectors/performance.json", JSON.stringify(metrics, null, 2));
   if (metrics.some((m) => m.ms >= 200)) console.warn("::warning::At least one 5,000-row filter response exceeded 200 ms; see performance artifact.");
+} catch (error) {
+  await page.screenshot({ path: "artifacts/selectors/failure.png", fullPage: true });
+  await writeFile("artifacts/selectors/failure.txt", String(error));
+  throw error;
 } finally {
   await browser.close();
 }

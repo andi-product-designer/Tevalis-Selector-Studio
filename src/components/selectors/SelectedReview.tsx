@@ -32,7 +32,7 @@ export function SelectedReview({ items, noun, onRemove, compact = false }: {
     });
   };
   if (!items.length) return null;
-  return <div ref={root} className="mt-2 flex min-h-0 flex-col text-xs">
+  return <div ref={root} className="mt-2 flex max-h-44 shrink-0 flex-col overflow-hidden text-xs">
     <Button ref={toggle} type="button" variant="link" size="sm" className="h-auto shrink-0 self-start px-0 text-action"
       aria-expanded={display} aria-controls={id} onClick={() => setReview((value) => !value)}>
       {review ? "Hide selected" : "Review selected"} · {items.length} {noun}

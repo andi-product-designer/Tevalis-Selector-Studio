@@ -36,8 +36,8 @@
   --color-active: var(--active);
   --color-warn: var(--warn);
   --color-warn-foreground: var(--warn-foreground);
-  --font-sans: system-ui, sans-serif;
-  --font-display: "Arial Narrow", system-ui, sans-serif;
+  --font-sans: "Open Sans", system-ui, sans-serif;
+  --font-display: "Fira Sans Condensed", "Open Sans", sans-serif;
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);

@@ -46,7 +46,7 @@ export function SearchBox({ label, value, onChange, shown, total, query, onKeyDo
     if (activeDescendant) document.getElementById(activeDescendant)?.scrollIntoView({ block: "nearest" });
   }, [activeDescendant]);
   return (
-    <div className="w-full">
+    <div className="w-full shrink-0">
       <div className="relative">
         <Search className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
         <input

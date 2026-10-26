@@ -5,6 +5,7 @@ import { filterTree, groupSelection, leaves, setMany, type TreeNode } from "@/li
 import { Highlight, SearchBox, useDebounced } from "./SearchBox";
 import { SelectedReview } from "./SelectedReview";
 import { cn } from "@/lib/utils";
+import { WindowedList } from "./WindowedList";
 
 function TriBox({ state }: { state: "none" | "some" | "all" }) {
   const ref = useRef<HTMLInputElement>(null);
@@ -43,6 +44,7 @@ export function TreeChecklist({ tree, selected, onChange, searchLabel, noun, onC
   useEffect(() => setActive(0), [q]);
   useEffect(() => { document.getElementById(`${id}-row-${active}`)?.scrollIntoView({ block: "nearest" }); }, [active, id]);
   const toggle = (node: TreeNode) => {
+    if (raw !== q) return;
     const state = groupSelection(original.get(node.id) ?? node, node, selected);
     onChange(setMany(selected, state.matchingIds, !state.allMatchingSelected));
   };
@@ -52,7 +54,7 @@ export function TreeChecklist({ tree, selected, onChange, searchLabel, noun, onC
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
       const next = Math.max(0, Math.min(rows.length - 1, index + (e.key === "ArrowDown" ? 1 : -1)));
-      setActive(next); if (focusRow) document.getElementById(`${id}-row-${next}`)?.focus();
+      setActive(next); if (focusRow) requestAnimationFrame(() => document.getElementById(`${id}-row-${next}`)?.focus());
     }
     if (node?.children && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
       e.preventDefault(); setOpen((o) => { const next = new Set(o); e.key === "ArrowRight" ? next.add(node.id) : next.delete(node.id); return next; });
@@ -65,34 +67,52 @@ export function TreeChecklist({ tree, selected, onChange, searchLabel, noun, onC
   const visibleChecked = visibleLeaves.filter((n) => selected.has(n.id)).length;
   const allVisibleChecked = visibleLeaves.length > 0 && visibleChecked === visibleLeaves.length;
   const hidden = selected.size - visibleChecked;
-  return <div className="flex flex-col gap-2">
+  const reviewItems = useMemo(() => {
+    const result: TreeNode[] = [];
+    const walk = (nodes: TreeNode[], path: string[]) => nodes.forEach((node) => {
+      if (node.children) walk(node.children, [...path, node.name]);
+      else if (selected.has(node.id)) result.push({ ...node, meta: path.join(" › ") });
+    });
+    walk(tree, []);
+    return result;
+  }, [tree, selected]);
+  return <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-0.5">
     <SearchBox label={searchLabel} value={raw} onChange={setRaw} query={q} shown={visibleLeaves.length} total={allLeaves.length} autoFocus={autoFocus} controls={`${id}-tree`} activeDescendant={rows[active] ? `${id}-row-${active}` : undefined} onKeyDown={(e) => keyboard(e)} />
-    <label className="flex items-center gap-2 border-b border-border pb-2 text-sm">
-      <input type="checkbox" className="size-4 accent-action" disabled={!visibleLeaves.length} checked={allVisibleChecked} onChange={() => onChange(setMany(selected, visibleLeaves.map((n) => n.id), !allVisibleChecked))} />
+    <label className="flex shrink-0 items-center gap-2 border-b border-border pb-2 text-sm">
+      <input type="checkbox" className="size-4 accent-action" disabled={!visibleLeaves.length || raw !== q} checked={allVisibleChecked} onChange={() => onChange(setMany(selected, visibleLeaves.map((n) => n.id), !allVisibleChecked))} />
       {allVisibleChecked ? "Unselect" : "Select"} {visibleLeaves.length} {searching ? "matching" : "total"} {visibleLeaves.length === 1 ? noun.replace(/s$/, "") : noun}
     </label>
-    <ul id={`${id}-tree`} role="tree" aria-label={`${noun} list`} aria-multiselectable className="max-h-80 overflow-auto text-sm">
-      {!rows.length && <li className="px-2 py-6 text-center text-muted-foreground">No matches for “{q.trim()}”. Your ticks are kept.</li>}
-      {rows.map(({ node, depth }, i) => {
+    <WindowedList id={id + "-tree"} label={noun + " list"} role="tree" multiple count={rows.length} active={active}
+      rowHeight={64} empty={allLeaves.length ? <>No matches for “{q.trim()}”. Your ticks are kept.</> : <>No {noun} are available.</>}
+      renderRow={(i, style) => {
+        const { node, depth } = rows[i]!;
         const state = groupSelection(original.get(node.id) ?? node, node, selected);
         const group = !!node.children;
-        return <li id={`${id}-row-${i}`} key={node.id} role="treeitem" aria-level={depth + 1} aria-checked={state.state === "some" ? "mixed" : state.state === "all"} aria-expanded={group ? searching || open.has(node.id) : undefined}
-          tabIndex={i === Math.min(active, rows.length - 1) ? 0 : -1} onFocus={() => setActive(i)} onKeyDown={(e) => keyboard(e, i, true)}
-          className={cn("flex flex-wrap items-center gap-1.5 py-1.5 pr-2 cursor-pointer focus-visible:outline-action", i === active && "bg-active outline outline-1 outline-action")}
-          style={{ paddingLeft: depth * 20 + 4 }} onMouseEnter={() => setActive(i)} onClick={() => toggle(node)}>
-          {group ? <Button variant="ghost" size="icon" type="button" tabIndex={-1} aria-label={`${open.has(node.id) ? "Collapse" : "Expand"} ${node.name}`} className="size-4 shrink-0 text-muted-foreground" onClick={(e) => { e.stopPropagation(); expand(node); }}>{searching || open.has(node.id) ? <ChevronDown /> : <ChevronRight />}</Button> : <span className="w-4 shrink-0" />}
+        return <li id={id + "-row-" + i} key={node.id} role="treeitem" aria-level={depth + 1}
+          aria-checked={state.state === "some" ? "mixed" : state.state === "all"}
+          aria-expanded={group ? searching || open.has(node.id) : undefined}
+          tabIndex={i === Math.min(active, rows.length - 1) ? 0 : -1} onFocus={() => setActive(i)} onKeyDown={(event) => keyboard(event, i, true)}
+          className={cn("flex items-center gap-1.5 pr-2 cursor-pointer border-b border-border hover:bg-muted",
+            state.state === "all" && "bg-active",
+            i === active && "outline outline-1 -outline-offset-1 outline-action")}
+          style={{ ...style, paddingLeft: depth * 16 + 4 }} onClick={() => toggle(node)}>
+          {group ? <Button variant="ghost" size="icon" type="button" tabIndex={-1}
+            aria-label={(open.has(node.id) ? "Collapse " : "Expand ") + node.name}
+            className="size-6 shrink-0 text-muted-foreground" disabled={searching}
+            onClick={(event) => { event.stopPropagation(); expand(node); }}>{searching || open.has(node.id) ? <ChevronDown /> : <ChevronRight />}</Button> : <span className="w-6 shrink-0" />}
           <TriBox state={state.state} />
-          <span className={cn("min-w-0 break-words", group && "font-semibold")}><Highlight text={node.name} q={q} /></span>
-          {node.code && <span className="ml-auto font-mono text-xs text-muted-foreground"><Highlight text={node.code} q={q} /></span>}
-          {group && <span className="ml-auto text-xs text-muted-foreground">{state.selected} of {state.total} selected</span>}
-          {group && searching && <span className="w-full pl-6 text-xs text-action">{state.allMatchingSelected ? "Unselect" : "Select"} {state.matchingIds.length} matching {state.matchingIds.length === 1 ? noun.replace(/s$/, "") : noun}</span>}
+          <span className="min-w-0 flex-1">
+            <span className={cn("block truncate", group && "font-semibold")} title={node.name}><Highlight text={node.name} q={q} /></span>
+            {group && <span className="block text-xs text-muted-foreground">{state.selected} of {state.total} selected</span>}
+            {group && searching && <span className="block text-xs text-action">{state.allMatchingSelected ? "Unselect" : "Select"} {state.matchingIds.length} matching {state.matchingIds.length === 1 ? noun.replace(/s$/, "") : noun}</span>}
+          </span>
+          {node.code && <span className="shrink-0 font-mono text-xs text-muted-foreground"><Highlight text={node.code} q={q} /></span>}
         </li>;
-      })}
-    </ul>
-    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2 text-xs">
+      }} />
+    <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border pt-2 text-xs">
       <span><strong>{selected.size}</strong> {noun} selected{hidden > 0 && searching && <> · <strong>{hidden}</strong> hidden by search</>}</span>
       {!!selected.size && <Button variant="link" size="sm" className="h-auto px-0 text-action" onClick={() => onChange(new Set())}>Clear selection</Button>}
     </div>
-    <SelectedReview compact items={allLeaves.filter((n) => selected.has(n.id))} noun={noun} onRemove={(itemId) => onChange(setMany(selected, [itemId], false))} />
+    <SelectedReview compact items={reviewItems} noun={noun} onRemove={(itemId) => onChange(setMany(selected, [itemId], false))} />
   </div>;
 }

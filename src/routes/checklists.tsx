@@ -9,6 +9,7 @@ import { Highlight, SearchBox, useDebounced } from "@/components/selectors/Searc
 import { priceGroups, sites } from "@/lib/data";
 import { setMany, textMatches } from "@/lib/selection";
 import { cn } from "@/lib/utils";
+import { SelectorPopup } from "@/components/selectors/SelectorPopup";
 
 export const Route = createFileRoute("/checklists")({
   head: () => ({
@@ -29,7 +30,7 @@ type Item = { id: string; name: string; sub?: string };
 function Page() {
   const [runs, setRuns] = useSelectionState<Set<string>>("checklists:runs", new Set(), "promotion sites selection");
   const [pg, setPg] = useSelectionState<Set<string>>("checklists:prices", new Set(["PG1"]), "price groups selection");
-  const siteItems = useMemo(() => sites.map((s) => ({ id: s.id, name: s.name, sub: s.area })), []);
+  const siteItems = useMemo(() => sites.map((s) => ({ id: s.id, name: s.name, sub: `${s.region} › ${s.area}` })), []);
   return (
     <>
       <PageTitle crumb="Centralised Management › Promotions" title="Pint & Pizza (PR73)" intro="Pattern C: checklist dropdowns. Search is pinned at the top; closing the list shows everything ticked, including ticks made in earlier searches." />
@@ -63,8 +64,8 @@ function CheckDropdown({ label, noun, items, sel, setSel }: { label: string; nou
         <span>{sel.size ? `${sel.size} ${noun} selected` : `No ${noun} selected`}</span><ChevronDown className="size-4" />
       </Button>
       {open && (
-        <div id={`${id}-picker`} role="dialog" aria-label={label} className="absolute z-10 mt-0.5 w-full border border-border bg-popover shadow-lg">
-          <div className="sticky top-0 space-y-2 border-b border-border bg-popover p-2">
+        <SelectorPopup anchor={trigger} id={`${id}-picker`} label={label} onClose={() => setOpen(false)}>
+          <div className="shrink-0 space-y-2 border-b border-border bg-popover p-2">
             <SearchBox label={`Search ${noun}`} value={raw} onChange={(v) => { setRaw(v); setActive(0); }} query={q} shown={list.length} total={items.length} autoFocus controls={`${id}-list`} activeDescendant={list[active] ? `${id}-option-${active}` : undefined}
               onKeyDown={(e) => {
                 if (e.key === "ArrowDown") { e.preventDefault(); setActive((a) => Math.min(list.length - 1, a + 1)); }
@@ -77,21 +78,21 @@ function CheckDropdown({ label, noun, items, sel, setSel }: { label: string; nou
               {allShown ? "Uncheck" : "Check"} all {list.length} shown
             </label>
           </div>
-          <ul id={`${id}-list`} aria-label={noun} className="max-h-64 overflow-auto text-sm" role="listbox" aria-multiselectable>
+          <ul id={`${id}-list`} aria-label={noun} className="min-h-0 max-h-64 flex-auto overflow-auto overscroll-contain text-sm" role="listbox" aria-multiselectable>
             {list.map((i, idx) => (
               <li id={`${id}-option-${idx}`} tabIndex={idx === active ? 0 : -1} onFocus={() => setActive(idx)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(i); } if (e.key === "Escape") { if (raw) setRaw(""); else close(); } if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); const next = Math.max(0, Math.min(list.length - 1, idx + (e.key === "ArrowDown" ? 1 : -1))); setActive(next); document.getElementById(`${id}-option-${next}`)?.focus(); } }} key={i.id} role="option" aria-selected={sel.has(i.id)} onMouseEnter={() => setActive(idx)} onClick={() => toggle(i)}
-                className={cn("flex cursor-pointer items-center gap-2 px-3 py-1", idx === active && "bg-active")}>
+                className={cn("flex cursor-pointer items-center gap-2 px-3 py-2 hover:bg-muted", sel.has(i.id) && "bg-active", idx === active && "outline outline-1 -outline-offset-1 outline-action")}>
                 <input type="checkbox" readOnly tabIndex={-1} checked={sel.has(i.id)} className="pointer-events-none size-4 accent-action" />
-                <span className="flex-1"><Highlight text={i.name} q={q} /></span>
+                <span className="min-w-0 flex-1"><span className="block truncate" title={i.name}><Highlight text={i.name} q={q} /></span>{i.sub && <span className="block text-xs text-muted-foreground">{i.sub}</span>}</span>
                 <span className="font-mono text-xs text-muted-foreground"><Highlight text={i.id} q={q} /></span>
               </li>
             ))}
           </ul>
-          <div className="flex justify-between border-t border-border p-2 text-xs">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border p-2 text-xs">
             <span>{sel.size} selected{hidden > 0 && q.trim() && ` · ${hidden} hidden by search`}</span>
             <Button variant="link" size="sm" className="h-auto px-0 text-action" onClick={close}>Done · {sel.size} {noun} selected</Button>
           </div>
-        </div>
+        </SelectorPopup>
       )}
       {!open && <SelectedReview items={chosen} noun={noun} onRemove={(itemId) => setSel(setMany(sel, [itemId], false))} />}
     </div>

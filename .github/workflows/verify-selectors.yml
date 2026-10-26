@@ -1,5 +1,7 @@
 name: Verify selectors
 on:
+  push:
+    branches: [codex/selector-refinements]
   pull_request:
   workflow_dispatch:
 permissions:

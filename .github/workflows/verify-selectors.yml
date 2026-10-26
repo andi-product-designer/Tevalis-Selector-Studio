@@ -1,0 +1,40 @@
+name: Verify selectors
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run test
+      - run: bunx tsc --noEmit
+      - run: bun run build
+      - name: Install browser verification tools
+        run: |
+          npm install --prefix /tmp/selector-browser --no-package-lock playwright@1.56.1
+          /tmp/selector-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Verify rendered selectors and measure 5,000-row filtering
+        run: |
+          python3 -m http.server 4173 --directory dist/client >/tmp/selector-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          node scripts/verify-selectors.mjs
+        env:
+          PLAYWRIGHT_MODULE: /tmp/selector-browser/node_modules/playwright/index.mjs
+      - name: Upload screenshots and timing evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selector-verification
+          path: artifacts/selectors
+          retention-days: 7

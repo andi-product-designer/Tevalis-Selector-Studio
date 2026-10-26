@@ -6,7 +6,8 @@ import { selectedIdentity } from "@/lib/selection";
 import { ChevronDown } from "lucide-react";
 import { TreeChecklist } from "@/components/selectors/TreeChecklist";
 import { ActionButton, PageTitle, Panel, Scenarios } from "@/components/selectors/Panel";
-import { siteTree, sites } from "@/lib/data";
+import { useSiteCatalogue } from "@/lib/site-catalogue";
+import { SelectorPopup } from "@/components/selectors/SelectorPopup";
 
 export const Route = createFileRoute("/sites-report")({
   head: () => ({
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/sites-report")({
 });
 
 function Page() {
+  const { sites, tree: siteTree } = useSiteCatalogue();
   const [sel, setSel] = useSelectionState<Set<string>>("sites-report:selection", new Set(), "sites report selection");
   const trigger = useRef<HTMLButtonElement>(null);
   const close = () => { setOpen(false); trigger.current?.focus(); };
@@ -38,17 +40,19 @@ function Page() {
         <label className="block text-sm" id="sites-label">Select Sites</label>
         <div className="relative">
           <Button ref={trigger} variant="outline" type="button" aria-labelledby="sites-label" aria-controls="sites-picker" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen((o) => !o)}
-            className="flex h-9 w-full items-center justify-between border border-input px-2 text-left text-sm">
-            <span className={sel.size ? "" : "italic"}>
+            className="flex h-auto min-h-9 w-full items-center justify-between gap-2 border border-input px-2 text-left text-sm whitespace-normal">
+            <span className={sel.size ? "min-w-0 break-words" : "italic"}>
               {sel.size === 0 ? "No sites selected" : sel.size <= 2 ? names.join(", ") : `${sel.size} sites selected`}
             </span>
             <ChevronDown className="size-4" />
           </Button>
           {open && (
-            <div id="sites-picker" role="dialog" aria-label="Select report sites" className="absolute z-10 mt-0.5 w-full border border-border bg-popover p-3 shadow-lg">
+            <SelectorPopup anchor={trigger} id="sites-picker" label="Select report sites" onClose={() => setOpen(false)}>
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-2">
               <TreeChecklist tree={siteTree} selected={sel} onChange={(next) => { setSel(next); setDone(null); }} searchLabel="Search sites by name or ID" noun="sites" autoFocus onClose={close} />
-              <div className="mt-2 text-right"><Button variant="link" className="text-sm text-action" onClick={close}>Done · {sel.size} sites selected</Button></div>
-            </div>
+              <div className="mt-2 shrink-0 border-t border-border pt-1 text-right"><Button variant="link" className="text-sm text-action" onClick={close}>Done · {sel.size} sites selected</Button></div>
+              </div>
+            </SelectorPopup>
           )}
         </div>
         <div className="mt-6">

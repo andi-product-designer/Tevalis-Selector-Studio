@@ -22,10 +22,10 @@ export function Panel({ title, children, className = "" }: { title?: string; chi
 
 export function Scenarios({ items }: { items: string[] }) {
   return (
-    <aside className="mt-6 border-l-4 border-action bg-surface p-4 text-sm">
-      <h3 className="mb-2 text-base text-header">Try these</h3>
-      <ol className="list-decimal space-y-1 pl-5">{items.map((s) => <li key={s}>{s}</li>)}</ol>
-    </aside>
+    <details className="mt-6 border border-border bg-surface p-4 text-sm">
+      <summary className="cursor-pointer font-display text-base text-header">Try these scenarios</summary>
+      <ol className="mt-3 list-decimal space-y-1 pl-5">{items.map((s) => <li key={s}>{s}</li>)}</ol>
+    </details>
   );
 }
 

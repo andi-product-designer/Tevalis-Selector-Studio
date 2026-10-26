@@ -35,6 +35,9 @@ function Page() {
 
   const toUse = () => { if (pick && avail.includes(pick)) { const r = transfer(avail, use, [pick]); setMembership({ avail: r.from, use: r.to }); setMsg(`${name(pick)} moved to In Use${u.q.trim() && !textMatches(u.q, name(pick), pick) ? " — hidden by the In Use search" : ""}.`); } };
   const toAvail = () => { if (pick && use.includes(pick)) { const r = transfer(use, avail, [pick]); setMembership({ avail: r.to, use: r.from }); setMsg(`${name(pick)} moved to Available${a.q.trim() && !textMatches(a.q, name(pick), pick) ? " — hidden by the Available search" : ""}.`); } };
+  const canAdd = !!pick && avail.includes(pick);
+  const canRemove = !!pick && use.includes(pick);
+  const position = pick ? use.indexOf(pick) : -1;
   const move = (dir: -1 | 1) => {
     if (!pick || !use.includes(pick)) return;
     const next = moveInOrder(use, pick, dir);
@@ -47,14 +50,14 @@ function Page() {
       <PageTitle crumb="Centralised Management › Manager Functions" title="Manager Functions" intro="Pattern D: each list has its own search. Up/down arrows move items in the full, unfiltered order." />
       <div className="grid items-start gap-3 md:grid-cols-[1fr_auto_1fr_auto]">
         <List title="Available Functions" f={a} pick={pick} setPick={setPick} onDouble={toUse} />
-        <div className="flex flex-row gap-2 md:mt-24 md:flex-col">
-          <Button type="button" variant="ghost" aria-label="Move to In Use" onClick={toUse} className="grid size-9 place-items-center bg-action text-action-foreground"><ChevronRight /></Button>
-          <Button type="button" variant="ghost" aria-label="Move to Available" onClick={toAvail} className="grid size-9 place-items-center bg-action text-action-foreground"><ChevronLeft /></Button>
+        <div className="flex flex-row flex-wrap gap-2 md:mt-24 md:flex-col">
+          <Button type="button" variant="ghost" aria-label="Add to In Use" disabled={!canAdd} onClick={toUse} className="h-auto min-h-9 px-3 py-2 bg-action text-action-foreground"><ChevronRight />Add to In Use</Button>
+          <Button type="button" variant="ghost" aria-label="Remove from In Use" disabled={!canRemove} onClick={toAvail} className="h-auto min-h-9 px-3 py-2 border border-border"><ChevronLeft />Remove</Button>
         </div>
         <List title="Functions In Use" f={u} pick={pick} setPick={setPick} onDouble={toAvail} numbered order={use} />
         <div className="flex flex-row gap-2 md:mt-24 md:flex-col">
-          <Button type="button" variant="ghost" aria-label="Move up" onClick={() => move(-1)} className="grid size-9 place-items-center border border-border bg-card"><ArrowUp /></Button>
-          <Button type="button" variant="ghost" aria-label="Move down" onClick={() => move(1)} className="grid size-9 place-items-center border border-border bg-card"><ArrowDown /></Button>
+          <Button type="button" variant="ghost" aria-label="Move up" disabled={position <= 0} onClick={() => move(-1)} className="grid size-9 place-items-center border border-border bg-card"><ArrowUp /></Button>
+          <Button type="button" variant="ghost" aria-label="Move down" disabled={position < 0 || position >= use.length - 1} onClick={() => move(1)} className="grid size-9 place-items-center border border-border bg-card"><ArrowDown /></Button>
         </div>
       </div>
       <p className="mt-3 min-h-5 text-sm" role="status">{msg}</p>
